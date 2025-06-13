@@ -14,6 +14,8 @@ RUN apt-get update && \
     ca-certificates \
     # PostgreSQL client library development files
     libpq-dev \
+    # For building pgaudit
+    libkrb5-dev \
     # Clean up apt cache to reduce image size
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,12 +33,11 @@ RUN git clone https://github.com/pgaudit/pgaudit.git && \
     cd / && rm -rf /tmp/pgaudit
 
 # Copy custom PostgreSQL configuration and initialization script
-# Custom config file
+
+# Copy custom PostgreSQL configuration
 COPY custom-postgresql.conf /etc/postgresql/postgresql.conf
+
 # Init script for pgaudit setup
 COPY configure-pgaudit.sh /docker-entrypoint-initdb.d/
-
-# Set environment variable for custom config file
-ENV POSTGRES_CONFIG_FILE=/etc/postgresql/postgresql.conf
 
 # The default entrypoint and CMD are inherited from the postgres base image
