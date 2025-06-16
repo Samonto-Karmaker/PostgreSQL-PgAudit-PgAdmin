@@ -1,5 +1,3 @@
-bash
-// filepath: db/configure-pgaudit.sh
 #!/bin/bash
 set -e
 

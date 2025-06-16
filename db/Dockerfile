@@ -32,12 +32,14 @@ RUN git clone https://github.com/pgaudit/pgaudit.git && \
     # Clean up build files
     cd / && rm -rf /tmp/pgaudit
 
-# Copy custom PostgreSQL configuration and initialization script
-
 # Copy custom PostgreSQL configuration
 COPY custom-postgresql.conf /etc/postgresql/postgresql.conf
 
-# Init script for pgaudit setup
+# Copy initialization script to docker-entrypoint-initdb.d/
+# Scripts in this directory run during database initialization
 COPY configure-pgaudit.sh /docker-entrypoint-initdb.d/
 
-# The default entrypoint and CMD are inherited from the postgres base image
+# Make the script executable
+RUN chmod +x /docker-entrypoint-initdb.d/configure-pgaudit.sh
+
+# The default entrypoint and CMD from the postgres image will be used
