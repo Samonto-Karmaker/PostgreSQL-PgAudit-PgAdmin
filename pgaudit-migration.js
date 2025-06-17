@@ -2,20 +2,98 @@ const { execSync } = require("child_process")
 const fs = require("fs")
 const path = require("path")
 
-const config = {
-    container: "postgres-audit-test",
+// Default configuration
+const defaultConfig = {
     user: "postgres",
     database: "postgres",
     password: "postgres",
 }
 
+// Parse command line arguments
+function parseArgs() {
+    const args = process.argv.slice(2)
+    const config = { ...defaultConfig }
+
+    // Display help if requested
+    if (args.includes("--help") || args.includes("-h")) {
+        console.log(`
+PostgreSQL pgAudit Migration Tool
+
+Usage: 
+  node pgaudit-migration.js --container CONTAINER_NAME [options]
+
+Required:
+  --container, -c    Name of the PostgreSQL container (required)
+
+Options:
+  --user, -u         PostgreSQL username (default: postgres)
+  --database, -d     PostgreSQL database name (default: postgres)
+  --password, -p     PostgreSQL password (default: postgres)
+  --help, -h         Show this help message
+        `)
+        process.exit(0)
+    }
+
+    // Parse arguments
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        const nextArg = args[i + 1]
+
+        if (arg === "--container" || arg === "-c") {
+            config.container = nextArg
+            i++
+        } else if (arg === "--user" || arg === "-u") {
+            config.user = nextArg
+            i++
+        } else if (arg === "--database" || arg === "-d") {
+            config.database = nextArg
+            i++
+        } else if (arg === "--password" || arg === "-p") {
+            config.password = nextArg
+            i++
+        }
+    }
+
+    // Validate container name is provided
+    if (!config.container) {
+        console.error("❌ Error: Container name is required.")
+        console.error(
+            "Please provide a container name using the --container or -c flag."
+        )
+        console.error(
+            "Example: node pgaudit-migration.js --container my-postgres-container"
+        )
+        console.error("Run with --help for more information.")
+        process.exit(1)
+    }
+
+    return config
+}
+
+// Get configuration from arguments
+const config = parseArgs()
+
+const logDir = "logs"
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir)
+
+const logFilePath = path.join(logDir, `pgaudit-setup.${timestamp()}.log`)
+fs.writeFileSync(logFilePath, "===== pgAudit Setup Log =====\n\n")
+
+function logToFile(message) {
+    fs.appendFileSync(logFilePath, message + "\n")
+}
+
 function runCommand(cmd) {
     console.log(`🛠️ Running: ${cmd}`)
+    logToFile(`🛠️ Running: ${cmd}`)
     try {
-        execSync(cmd, { stdio: "inherit" })
+        const output = execSync(cmd, { stdio: "pipe" }).toString()
+        logToFile(output)
     } catch (err) {
-        console.error("❌ Error running command:")
-        console.error(err.message || err)
+        logToFile("❌ Error running command:")
+        logToFile(err.stdout?.toString() || "")
+        logToFile(err.stderr?.toString() || err.message)
+        console.error("❌ Error running command (also logged to file).")
         process.exit(1)
     }
 }
@@ -26,7 +104,12 @@ function timestamp() {
 
 console.log("===== 🐘 pgAudit Migration Tool =====")
 
-console.log("🔧 Target container:", config.container)
+console.log("🔧 Configuration:")
+console.log(`   Container: ${config.container}`)
+console.log(`   User: ${config.user}`)
+console.log(`   Database: ${config.database}`)
+console.log(`   Password: ${config.password.replace(/./g, "*")}`)
+console.log("")
 
 // Check container is running
 runCommand(
