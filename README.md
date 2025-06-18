@@ -142,7 +142,29 @@ Example with all options:
 node pgaudit-migration.js --container postgres-container --user admin --database mydb --password mysecretpw
 ```
 
-The script automatically logs all operations to a log file in the `logs` directory with a timestamped filename for easy troubleshooting. It will:
+### Accessing Audit Logs in Existing Projects
+
+**Important:** If you're using the migration script with an existing project and want to see audit logs in your host directory, you need to modify your `docker-compose.yaml` file to add a volume mount:
+
+```yaml
+services:
+    your-postgres-container:
+        # ... existing configuration ...
+        volumes:
+            # ... existing volumes ...
+            - ./logs:/var/log/postgresql # Add this line to access logs in host directory
+```
+
+Then restart your container:
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+This is the standard Docker approach for accessing container files from the host system and the most reliable way to access audit logs in your project directory.
+
+The migration script will:
 
 1. Back up your existing PostgreSQL configuration
 2. Install pgAudit and its dependencies
